@@ -40,25 +40,17 @@ Frontend (React) → Backend (Express) → PostgreSQL
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/tu-usuario/utt-inscripciones.git
-cd utt-inscripciones
+git clone https://github.com/AlexD39/Arquitectura.git
+cd Arquitectura
+```
 
-2. Configurar Base de Datos con Docker
-# Crear contenedor PostgreSQL
-docker run --name postgres-utt \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=inscripciones_utt \
-  -p 5433:5432 \
-  -d postgres:15
-
-# Verificar que el contenedor esté corriendo
-docker ps
-
-3. Instalar dependencias del Backend
+2. Instalar dependencias del Backend
+```bash
 cd src/backend
 npm install
-
-4. Instalar dependencias del Frontend
+```
+3. Instalar dependencias del Frontend
+```bash
 cd ../frontend
 npm install
 ```
