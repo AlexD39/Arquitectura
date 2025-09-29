@@ -46,11 +46,7 @@ cd Arquitectura
 2. Configurar Base de Datos con Docker
 ```bash
 # Crear contenedor PostgreSQL
-docker run --name postgres-utt \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=inscripciones_utt \
-  -p 5433:5432 \
-  -d postgres:15
+docker run --name postgres-utt -e POSTGRES_PASSWORD=password -e POSTGRES_DB=inscripciones_utt -p 5433:5432 -d postgres:15
 
 # Verificar que el contenedor esté corriendo
 docker ps
