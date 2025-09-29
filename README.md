@@ -43,13 +43,24 @@ Frontend (React) → Backend (Express) → PostgreSQL
 git clone https://github.com/AlexD39/Arquitectura.git
 cd Arquitectura
 ```
+2. Configurar Base de Datos con Docker
+```bash
+# Crear contenedor PostgreSQL
+docker run --name postgres-utt \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=inscripciones_utt \
+  -p 5433:5432 \
+  -d postgres:15
 
-2. Instalar dependencias del Backend
+# Verificar que el contenedor esté corriendo
+docker ps
+```
+3. Instalar dependencias del Backend
 ```bash
 cd src/backend
 npm install
 ```
-3. Instalar dependencias del Frontend
+4. Instalar dependencias del Frontend
 ```bash
 cd ../frontend
 npm install
