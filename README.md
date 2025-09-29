@@ -85,20 +85,23 @@ Health Check: http://localhost:3000/api/health
 📡 Endpoints de la API
 ---
 Usuarios
+```bash
 GET    /api/usuarios                 # Listar todos los usuarios
 POST   /api/usuarios                 # Crear nuevo usuario
 GET    /api/usuarios/:id             # Obtener usuario específico
-
+```
 Pagos
+```bash
 GET    /api/pagos                    # Listar todos los pagos
 POST   /api/pagos                    # Crear nuevo pago
 PUT    /api/pagos/:id/estado         # Actualizar estado de pago
 GET    /api/pagos/usuario/:usuarioId # Pagos por usuario
-
+```
 Sistema
+```bash
 GET    /api/health                   # Estado del servidor
 GET    /                             # Información de la API
-
+```
 ---
 🧪 Pruebas de la API
 ---
@@ -151,14 +154,3 @@ CREATE TABLE pagos (
   fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   referencia VARCHAR(100) UNIQUE
 );
-
-Comandos útiles de PostgreSQL
-# Conectar a la base de datos
-docker exec -it postgres-utt psql -U postgres -d inscripciones_utt
-
-# Ver tablas
-\dt
-
-# Ver datos
-SELECT * FROM usuarios;
-SELECT * FROM pagos;
