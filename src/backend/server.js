@@ -1,109 +1,124 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 
-// Importar modelos
-const Usuario = require('./models/usuarios');
-const Pago = require('./models/pagos');
+// Configuración de base de datos y dependencias
+const db = require('./config/database'); // Debe exportar un Pool o cliente compatible con query() y end()
+const usuariosRepo = require('./repositories/usuariosRepository');
+const pagosRepo = require('./repositories/pagosRepository');
+const bus = require('./events/bus');
 
-// Importar rutas
-const usuariosRoutes = require('./routes/usuarios');
-const pagosRoutes = require('./routes/pagos');
+// Rutas (factories que reciben dependencias)
+const createUsuariosRouter = require('./routes/usuarios');
+const createPagosRouter = require('./routes/pagos');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middlewares globales
 app.use(cors());
 app.use(express.json());
 
-// Logging middleware
+// Logger simple
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
+console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+next();
 });
 
-// Rutas API
-app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/pagos', pagosRoutes);
+// Rutas API (inyección de dependencias)
+app.use('/api/usuarios', createUsuariosRouter({ usuariosRepo, bus }));
+app.use('/api/pagos', createPagosRouter({ pagosRepo, usuariosRepo, bus }));
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: '🚀 Servidor con PostgreSQL funcionando',
-    database: 'PostgreSQL',
-    timestamp: new Date().toISOString()
-  });
+res.json({
+status: 'OK',
+message: '🚀 Servidor con PostgreSQL funcionando correctamente',
+database: 'PostgreSQL',
+timestamp: new Date().toISOString()
+});
 });
 
-// Ruta de inicio
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Bienvenido al Sistema de Inscripciones UTT - PostgreSQL',
-    endpoints: {
-      usuarios: '/api/usuarios',
-      pagos: '/api/pagos',
-      health: '/api/health'
-    }
-  });
+res.json({
+message: 'Bienvenido al Sistema de Inscripciones UTT - PostgreSQL',
+endpoints: {
+usuarios: '/api/usuarios',
+pagos: '/api/pagos',
+health: '/api/health'
+}
+});
 });
 
-// Función para inicializar base de datos
+// Listeners de eventos
+bus.on('pago.registrado', (pago) => {
+console.log('📢 Evento "pago.registrado" recibido:', pago.id || pago);
+// Aquí puedes agregar lógica adicional (notificaciones, logs externos, etc.)
+});
+
+bus.on('usuario.creado', (usuario) => {
+console.log('👤 Evento "usuario.creado" recibido:', usuario.id || usuario);
+});
+
+// Inicializar base de datos
 async function inicializarBaseDeDatos() {
-  try {
-    console.log('🔄 Inicializando base de datos PostgreSQL...');
-    
-    // Crear tablas
-    await Usuario.crearTabla();
-    await Pago.crearTabla();
-    
-    // Verificar si hay datos de prueba
-    const usuarios = await Usuario.obtenerTodos();
-    if (usuarios.length === 0) {
-      console.log('📝 Insertando datos de prueba...');
-      
-      await Usuario.crear('Ana García', 'ana@utt.edu.mx', '2024001', 'Ingeniería en Software');
-      await Usuario.crear('Carlos López', 'carlos@utt.edu.mx', '2024002', 'Administración');
-      await Usuario.crear('María Hernández', 'maria@utt.edu.mx', '2024003', 'Contaduría');
-      
-      console.log('✅ Datos de prueba insertados');
-    } else {
-      console.log(`📊 Ya existen ${usuarios.length} usuarios en la base de datos`);
-    }
-    
-  } catch (error) {
-    console.error('❌ Error inicializando base de datos:', error);
-  }
+try {
+await db.query('SELECT 1');
+console.log('✅ Conexión a la base de datos establecida');
+} catch (err) {
+console.error('❌ Error al conectar con la base de datos:', err.message);
+throw err;
+}
 }
 
-// Manejo de errores
+// Iniciar servidor
+const server = app.listen(PORT, async () => {
+try {
+await inicializarBaseDeDatos();
+console.log('='.repeat(60));
+console.log('🎓 SISTEMA DE INSCRIPCIONES UTT - POSTGRESQL');
+console.log('='.repeat(60));
+console.log(`✅ Servidor en ejecución: http://localhost:${PORT}`);
+console.log(`🗃️  Base de datos: PostgreSQL`);
+console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+console.log('='.repeat(60));
+} catch (err) {
+console.error('⚠️ Fallo al iniciar la aplicación, cerrando...');
+server.close(() => process.exit(1));
+}
+});
+
+// Middleware de manejo de errores
 app.use((error, req, res, next) => {
-  console.error('Error del servidor:', error);
-  res.status(500).json({ 
-    error: 'Error interno del servidor',
-    detalles: error.message 
-  });
+console.error('Error del servidor:', error);
+res.status(error.status || 500).json({
+error: error.message || 'Error interno del servidor'
+});
 });
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
-  res.status(404).json({
-    error: 'Ruta no encontrada',
-    path: req.originalUrl
-  });
+res.status(404).json({
+error: 'Ruta no encontrada',
+path: req.originalUrl
+});
 });
 
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log('='.repeat(60));
-  console.log('🎓 SISTEMA DE INSCRIPCIONES UTT - POSTGRESQL');
-  console.log('='.repeat(60));
-  
-  await inicializarBaseDeDatos();
-  
-  console.log(`✅ Servidor ejecutándose en: http://localhost:${PORT}`);
-  console.log(`🗃️  Base de datos: PostgreSQL`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log('='.repeat(60));
-});
+// Cierre controlado (graceful shutdown)
+async function shutdown() {
+console.log('\n🛑 Cerrando servidor...');
+server.close(() => console.log('HTTP server cerrado'));
+if (db && typeof db.end === 'function') {
+try {
+await db.end();
+console.log('🔒 Conexión a base de datos cerrada');
+} catch (e) {
+console.error('Error cerrando la conexión a la BD:', e.message);
+}
+}
+process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
